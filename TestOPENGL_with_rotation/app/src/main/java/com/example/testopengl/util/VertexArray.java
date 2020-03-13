@@ -1,3 +1,4 @@
+//useless
 package com.example.testopengl.util;
 
 import java.nio.ByteBuffer;

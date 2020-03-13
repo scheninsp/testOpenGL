@@ -37,4 +37,15 @@ public class Geometry {
         }
     }
 
+    //functions
+    public static float gauss_fun(float x, float y, float sigma){
+
+        float dec1 = 2.0f*sigma*sigma;
+        float dec2 = (float)Math.PI * dec1;
+
+        float out = (float)Math.exp(-(x*x + y*y)/dec1)/dec2;
+
+        return out;
+    }
+
 }

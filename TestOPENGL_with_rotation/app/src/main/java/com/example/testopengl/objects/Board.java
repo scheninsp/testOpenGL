@@ -1,22 +1,46 @@
+//useless
 package com.example.testopengl.objects;
 
 import com.example.testopengl.programs.TextureShaderProgram;
+import com.example.testopengl.util.IndexBuffer;
 import com.example.testopengl.util.VertexArray;
+import com.example.testopengl.util.VertexBuffer;
+import static com.example.testopengl.util.Constants.BYTES_PER_FLOAT;
+import static com.example.testopengl.util.Geometry.gauss_fun;
 
+import static android.opengl.GLES20.GL_ELEMENT_ARRAY_BUFFER;
 import static android.opengl.GLES20.GL_TRIANGLES;
+import static android.opengl.GLES20.GL_UNSIGNED_SHORT;
+import static android.opengl.GLES20.glBindBuffer;
 import static android.opengl.GLES20.glDrawArrays;
+import static android.opengl.GLES20.glDrawElements;
+
 
 public class Board {
     private static final int POSITION_COMPONENT_COUNT = 3;
     private static final int TEXTURE_COORDINATES_COMPONENT_COUNT = 2;
     private static final int STRIDE = 0;
 
-    private static int triangleNum = 2*2*2;
-    private static VertexArray mVertexBuffer;
-    private static VertexArray mUVBuffer;
+    private static float[] mMesh;
+    private static final int mesh_rows = 64;
+    private static final int mesh_cols = 64;
+
+    /*private static final float[] mesh = {-0.5f,-0.5f,0.5f,-0.5f,-0.5f,0.5f,0.5f,0.5f};
+    private static final int mesh_rows = 2;
+    private static final int mesh_cols = 2;
+    */
+
+    private static final int numElements = (mesh_cols-1) * (mesh_rows-1) * 6;
+
+    private static VertexBuffer mVertexBuffer;
+    private static VertexBuffer mUVBuffer;
+    private static IndexBuffer indexBuffer;
 
     public Board() {
+        mMesh = genMesh(mesh_rows,mesh_cols);
         genVertexUVBufferData();
+        indexBuffer = new IndexBuffer(createIndexData());
+        int xx=0;
     }
 
     //send data into buffers
@@ -25,7 +49,7 @@ public class Board {
                 0,
                 textureProgram.getPositionAttributeLocation(),
                 POSITION_COMPONENT_COUNT,
-                STRIDE);
+                0);
 
         mUVBuffer.setVertexAttribPointer(
                 0,
@@ -35,82 +59,90 @@ public class Board {
     }
 
     public void draw() {
-        glDrawArrays(GL_TRIANGLES, 0, 3*triangleNum);
+        // glDrawArrays(GL_TRIANGLES, 0, 3*triangleNum);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBuffer.getBufferId());
+        glDrawElements(GL_TRIANGLES, numElements, GL_UNSIGNED_SHORT, 0);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    }
+
+    private float[] genMesh(int mesh_rows, int mesh_cols){
+        float start = -0.5f;
+        float end = 0.5f;
+        float[] mesh = new float[mesh_rows* mesh_cols* 2];
+
+        for(int row = 0; row< mesh_rows; row++){
+            for (int col = 0; col < mesh_cols; col++) {
+                mesh[row*2*mesh_cols+2*col] = start+ (end-start)*((float)row/(float)(mesh_rows-1));
+                mesh[row*2*mesh_cols+2*col+1] = start+ (end-start)*((float)col/(float)(mesh_cols-1));
+            }
+        }
+
+        return mesh;
+    }
+
+
+    private short[] createIndexData(){
+        final short[] indexData = new short[numElements];
+        int offset = 0;
+
+        int height = mesh_rows;
+        int width = mesh_cols;
+
+        for(int row = 0; row< height-1; row++){
+            for(int col=0; col<width-1; col++){
+
+                short tln = (short)(row*width+col);
+                short trn = (short)(row*width+col+1);
+                short bln = (short)((row+1)*width+col);
+                short brn = (short) ((row+1)*width+col+1);
+
+                //triangle 1 and 2, make sure these are counter-clock ordered
+                indexData[offset++] = tln;
+                indexData[offset++] = bln;
+                indexData[offset++] = trn;
+
+                indexData[offset++] = bln;
+                indexData[offset++] = brn;
+                indexData[offset++] = trn;
+
+            }
+        }
+
+        return indexData;
     }
 
     //generate data to send into openGL shaders
     private void genVertexUVBufferData() {
 
-        int num = 0;
-       // float[] mesh = {-20, -20, 500, 10, 1000, 0, 0, 500, 470, 500, 980, 500, 20, 980, 420, 950, 950, 910};
-        float[] mesh = {0, 0, 500, 200, 1000, 0, 200, 500, 500, 500, 800, 500, 0, 1000, 500, 800, 1000, 1000};
-        int mesh_rows = 3;
-        int mesh_cols = 3;
-        int mesh_height = 1000;
-        int mesh_width = 1000;
+        //assign
+        float[] vertexBuffer = new float[POSITION_COMPONENT_COUNT * mesh_rows * mesh_cols];
+        float[] uvBuffer = new float[TEXTURE_COORDINATES_COMPONENT_COUNT * mesh_rows * mesh_cols];
 
-        //normalize
+        int num = 0;
         for (int row = 0; row < mesh_rows; row++) {
             for (int col = 0; col < mesh_cols; col++) {
-                mesh[row * mesh_cols * 2 + col * 2] = (mesh[row * mesh_cols * 2 + col * 2] - mesh_width / 2) / mesh_width;
-                mesh[row * mesh_cols * 2 + col * 2 + 1] = (mesh[row * mesh_cols * 2 + col * 2 + 1] - mesh_height / 2) / mesh_height;
+                // assign data to buffer
+                vertexBuffer[num++] = mMesh[row*2*mesh_cols+2*col];
+                vertexBuffer[num++] = mMesh[row*2*mesh_cols+2*col+1];
+
+                float tmpy = ((float)row-(float)mesh_rows/2)/(float)mesh_rows;
+                float tmpx = ((float)col-(float)mesh_cols/2)/(float)mesh_cols;
+                vertexBuffer[num++] = 0.1f * gauss_fun(tmpx,tmpy,0.18f);
+
             }
         }
 
-        //assign
-        float[] vertexBuffer = new float[18 * (mesh_rows - 1) * (mesh_cols - 1)];
-        float[] uvBuffer = new float[12 * (mesh_rows - 1) * (mesh_cols - 1)];
-
-        for (int row = 0; row < mesh_rows - 1; row++) {
-            for (int col = 0; col < mesh_cols - 1; col++) {
-
-                float tl_x = mesh[row * mesh_cols * 2 + col * 2];
-                float tl_y = mesh[row * mesh_cols * 2 + col * 2 + 1];
-                float tr_x = mesh[row * mesh_cols * 2 + (col+1) * 2];
-                float tr_y = mesh[row * mesh_cols * 2 + (col+1) * 2 + 1];
-                float bl_x = mesh[(row+1) * mesh_cols * 2 + col * 2];
-                float bl_y = mesh[(row+1) * mesh_cols * 2 + col * 2 + 1];
-                float br_x = mesh[(row+1) * mesh_cols * 2 + (col+1) * 2];
-                float br_y = mesh[(row+1) * mesh_cols * 2 + (col+1) * 2 + 1];
+        num=0;
+        for (int row = 0; row < mesh_rows; row++) {
+            for (int col = 0; col < mesh_cols; col++) {
 
                 // assign data to buffer
-                vertexBuffer[18 * num + 0] = tl_x;
-                vertexBuffer[18 * num + 1] = tl_y;
-                vertexBuffer[18 * num + 2] = 0;
-                vertexBuffer[18 * num + 3] = tr_x;
-                vertexBuffer[18 * num + 4] = tr_y;
-                vertexBuffer[18 * num + 5] = 0;
-                vertexBuffer[18 * num + 6] = br_x;
-                vertexBuffer[18 * num + 7] = br_y;
-                vertexBuffer[18 * num + 8] = 0;
-                vertexBuffer[18 * num + 9] = br_x;
-                vertexBuffer[18 * num + 10] = br_y;
-                vertexBuffer[18 * num + 11] = 0;
-                vertexBuffer[18 * num + 12] = bl_x;
-                vertexBuffer[18 * num + 13] = bl_y;
-                vertexBuffer[18 * num + 14] = 0;
-                vertexBuffer[18 * num + 15] = tl_x;
-                vertexBuffer[18 * num + 16] = tl_y;
-                vertexBuffer[18 * num + 17] = 0;
-
-                uvBuffer[12 * num + 0] =(float)(col) /(float) (mesh_cols - 1);
-                uvBuffer[12 * num + 1] =(float)(row) /(float) (mesh_rows - 1);
-                uvBuffer[12 * num + 2] =(float)(col + 1) /(float) (mesh_cols - 1);
-                uvBuffer[12 * num + 3] =(float)(row) /(float) (mesh_rows - 1);
-                uvBuffer[12 * num + 4] =(float)(col + 1) /(float) (mesh_cols - 1);
-                uvBuffer[12 * num + 5] =(float)(row + 1) /(float) (mesh_rows - 1);
-                uvBuffer[12 * num + 6] =(float)(col + 1) /(float) (mesh_cols - 1);
-                uvBuffer[12 * num + 7] =(float)(row + 1) /(float) (mesh_rows - 1);
-                uvBuffer[12 * num + 8] =(float)(col) /(float) (mesh_cols - 1);
-                uvBuffer[12 * num + 9] =(float)(row + 1) /(float) (mesh_rows - 1);
-                uvBuffer[12 * num + 10] =(float)(col) /(float) (mesh_cols - 1);
-                uvBuffer[12 * num + 11] =(float)(row) /(float) (mesh_rows - 1);
-
-                num++;
+                uvBuffer[num++] =(float)(col) /(float)(mesh_cols-1);
+                uvBuffer[num++] =(float)(row) /(float)(mesh_rows-1);
             }
         }
 
-        mVertexBuffer = new VertexArray(vertexBuffer);
-        mUVBuffer = new VertexArray(uvBuffer);
+        mVertexBuffer = new VertexBuffer(vertexBuffer);
+        mUVBuffer = new VertexBuffer(uvBuffer);
     }
 }

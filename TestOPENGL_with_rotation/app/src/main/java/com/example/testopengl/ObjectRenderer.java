@@ -1,8 +1,12 @@
 package com.example.testopengl;
 
 import static android.opengl.GLES20.GL_COLOR_BUFFER_BIT;
+import static android.opengl.GLES20.GL_CULL_FACE;
+import static android.opengl.GLES20.GL_DEPTH_BUFFER_BIT;
+import static android.opengl.GLES20.GL_DEPTH_TEST;
 import static android.opengl.GLES20.glClear;
 import static android.opengl.GLES20.glClearColor;
+import static android.opengl.GLES20.glEnable;
 import static android.opengl.GLES20.glViewport;
 import static android.opengl.Matrix.multiplyMM;
 import static android.opengl.Matrix.rotateM;
@@ -13,10 +17,12 @@ import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
 import android.content.Context;
+import android.graphics.drawable.BitmapDrawable;
 import android.opengl.GLSurfaceView.Renderer;
 import android.opengl.Matrix;
 
 import com.example.testopengl.objects.Board;
+import com.example.testopengl.objects.BoardHmap;
 import com.example.testopengl.programs.TextureShaderProgram;
 import com.example.testopengl.util.MatrixHelper;
 import com.example.testopengl.util.TextureHelper;
@@ -48,6 +54,11 @@ public class ObjectRenderer implements Renderer {
     @Override
     public void onSurfaceCreated(GL10 glUnused, EGLConfig config) {
         glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+        glEnable(GL_DEPTH_TEST);
+        glEnable(GL_CULL_FACE);
+
+        //board = new BoardHmap(((BitmapDrawable)context.getResources()
+        //        .getDrawable(R.drawable.board_surface_heightmap)).getBitmap());
 
         board = new Board();
 
@@ -64,14 +75,15 @@ public class ObjectRenderer implements Renderer {
         // Set the OpenGL viewport to fill the entire surface.
         glViewport(0, 0, width, height);
 
-        MatrixHelper.perspectiveM(projectionMatrix, 50, (float) width
+        MatrixHelper.perspectiveM(projectionMatrix, 60, (float) width
                 / (float) height, 1f, 10f);
     }
 
     @Override
     public void onDrawFrame(GL10 glUnused) {
         // Clear the rendering surface.
-        glClear(GL_COLOR_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        //glClear(GL_COLOR_BUFFER_BIT);
 
         textureProgram.useProgram();
 
