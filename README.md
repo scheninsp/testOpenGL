@@ -3,7 +3,7 @@ a test library for openGL
 
 Meshgrid(TestOPENGL_with_rotation)  
 Features:  
-(1)Generate meshgrid for texturing x-y plane 
+(1)Generate meshgrid for texturing x-y plane  
 (2)Height data generated and applied to z  
 (3)Rotation enabled  
 Adding more features...  
