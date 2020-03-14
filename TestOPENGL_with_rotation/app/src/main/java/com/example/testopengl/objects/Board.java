@@ -1,12 +1,11 @@
-//useless
 package com.example.testopengl.objects;
 
 import com.example.testopengl.programs.TextureShaderProgram;
 import com.example.testopengl.util.IndexBuffer;
-import com.example.testopengl.util.VertexArray;
 import com.example.testopengl.util.VertexBuffer;
 import static com.example.testopengl.util.Constants.BYTES_PER_FLOAT;
 import static com.example.testopengl.util.Geometry.gauss_fun;
+import com.example.testopengl.util.Geometry.Vector;
 
 import static android.opengl.GLES20.GL_ELEMENT_ARRAY_BUFFER;
 import static android.opengl.GLES20.GL_TRIANGLES;
@@ -18,17 +17,22 @@ import static android.opengl.GLES20.glDrawElements;
 
 public class Board {
     private static final int POSITION_COMPONENT_COUNT = 3;
+    private static final int NORMAL_COMPONENT_COUNT = 3;
+    private static final int TOTAL_COMPONENT_COUNT =
+            POSITION_COMPONENT_COUNT + NORMAL_COMPONENT_COUNT;
     private static final int TEXTURE_COORDINATES_COMPONENT_COUNT = 2;
-    private static final int STRIDE = 0;
+    private static final int VERTEX_STRIDE =
+            TOTAL_COMPONENT_COUNT * BYTES_PER_FLOAT; //1st vertex buffer contain both vertices and normals
+    private static final int TEXTURE_STRIDE = 0;
 
     private static float[] mMesh;
     private static final int mesh_rows = 64;
     private static final int mesh_cols = 64;
 
-    /*private static final float[] mesh = {-0.5f,-0.5f,0.5f,-0.5f,-0.5f,0.5f,0.5f,0.5f};
-    private static final int mesh_rows = 2;
-    private static final int mesh_cols = 2;
-    */
+    //private static final float[] mesh = {-0.5f,-0.5f,0.5f,-0.5f,-0.5f,0.5f,0.5f,0.5f};
+    //private static final int mesh_rows = 2;
+    //private static final int mesh_cols = 2;
+
 
     private static final int numElements = (mesh_cols-1) * (mesh_rows-1) * 6;
 
@@ -38,6 +42,7 @@ public class Board {
 
     public Board() {
         mMesh = genMesh(mesh_rows,mesh_cols);
+        //mMesh = mesh;
         genVertexUVBufferData();
         indexBuffer = new IndexBuffer(createIndexData());
         int xx=0;
@@ -49,13 +54,19 @@ public class Board {
                 0,
                 textureProgram.getPositionAttributeLocation(),
                 POSITION_COMPONENT_COUNT,
-                0);
+                VERTEX_STRIDE);
+
+        mVertexBuffer.setVertexAttribPointer(
+                POSITION_COMPONENT_COUNT * BYTES_PER_FLOAT,
+                textureProgram.getNormalAttributeLocation(),
+                NORMAL_COMPONENT_COUNT,
+                VERTEX_STRIDE);
 
         mUVBuffer.setVertexAttribPointer(
                 0,
                 textureProgram.getTextureCoordinatesAttributeLocation(),
                 TEXTURE_COORDINATES_COMPONENT_COUNT,
-                STRIDE);
+                TEXTURE_STRIDE);
     }
 
     public void draw() {
@@ -115,19 +126,52 @@ public class Board {
     private void genVertexUVBufferData() {
 
         //assign
-        float[] vertexBuffer = new float[POSITION_COMPONENT_COUNT * mesh_rows * mesh_cols];
+        float[] vertexBuffer = new float[TOTAL_COMPONENT_COUNT * mesh_rows * mesh_cols];
         float[] uvBuffer = new float[TEXTURE_COORDINATES_COMPONENT_COUNT * mesh_rows * mesh_cols];
+
+        float[] zBuffer = new float[mesh_rows * mesh_cols];
+        for (int row = 0; row < mesh_rows; row++) {
+            for (int col = 0; col < mesh_cols; col++) {
+                float tmpy = ((float) row - (float) mesh_rows / 2) / (float) mesh_rows;
+                float tmpx = ((float) col - (float) mesh_cols / 2) / (float) mesh_cols;
+                zBuffer[row*mesh_cols+col] = 0.1f * gauss_fun(tmpx, tmpy, 0.18f);
+            }
+        }
 
         int num = 0;
         for (int row = 0; row < mesh_rows; row++) {
             for (int col = 0; col < mesh_cols; col++) {
                 // assign data to buffer
-                vertexBuffer[num++] = mMesh[row*2*mesh_cols+2*col];
-                vertexBuffer[num++] = mMesh[row*2*mesh_cols+2*col+1];
+                float x = mMesh[row*2*mesh_cols+2*col];
+                float y = mMesh[row*2*mesh_cols+2*col+1];
+                float z = zBuffer[row*mesh_cols+col];
 
-                float tmpy = ((float)row-(float)mesh_rows/2)/(float)mesh_rows;
-                float tmpx = ((float)col-(float)mesh_cols/2)/(float)mesh_cols;
-                vertexBuffer[num++] = 0.1f * gauss_fun(tmpx,tmpy,0.18f);
+                //appoximate normal using vRightToLeft crossproduct vTopToBottom
+                int col_idl = Math.max(col-1, 0);
+                int col_idr = Math.min(col+1, mesh_cols-1);
+                float xrl = mMesh[row*2*mesh_cols+2*col_idl] - mMesh[row*2*mesh_cols+2*col_idr];
+                float yrl = mMesh[row*2*mesh_cols+2*col_idl+1] - mMesh[row*2*mesh_cols+2*col_idr+1];
+                float zrl = zBuffer[row*mesh_cols+col_idl] - zBuffer[row*mesh_cols+col_idr];
+
+                Vector rightToLeft = new Vector(xrl, yrl, zrl);
+
+                int row_idb = Math.max(row-1, 0);
+                int row_idt = Math.min(row+1, mesh_rows-1);
+                float xtb = mMesh[row_idb*2*mesh_cols+2*col] - mMesh[row_idt*2*mesh_cols+2*col];
+                float ytb = mMesh[row_idb*2*mesh_cols+2*col+1] - mMesh[row_idt*2*mesh_cols+2*col+1];
+                float ztb = zBuffer[row_idb*mesh_cols+col] - zBuffer[row_idt*mesh_cols+col];
+
+                Vector topToBottom = new Vector(xtb, ytb, ztb);
+
+                Vector normal = rightToLeft.crossProduct(topToBottom);
+
+                vertexBuffer[num++] = x;
+                vertexBuffer[num++] = y;
+                vertexBuffer[num++] = z;
+                vertexBuffer[num++] = normal.x;
+                vertexBuffer[num++] = normal.y;
+                vertexBuffer[num++] = normal.z;
+
 
             }
         }

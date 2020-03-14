@@ -25,6 +25,25 @@ public class Geometry {
         public float length(){
             return (float)Math.sqrt(x*x+y*y+z*z);
         }
+
+        public Vector crossProduct(Vector rhs){
+            return new Vector(
+                    (y*rhs.z)-(z*rhs.y),
+                    (z*rhs.x)-(x*rhs.z),
+                    (x*rhs.y)-(y*rhs.x));
+        }
+
+        public float dotProduct(Vector rhs){
+            return (x*rhs.x + y*rhs.y + z*rhs.z);
+        }
+
+        public Vector scale(float f){
+            return new Vector(x*f, y*f, z*f);
+        }
+
+        public Vector normalize(){
+            return scale(1f/length());
+        }
     }
 
     public static class Ray{

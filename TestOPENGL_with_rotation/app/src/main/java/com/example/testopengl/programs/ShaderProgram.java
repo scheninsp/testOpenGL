@@ -11,12 +11,16 @@ import static android.opengl.GLES20.glUseProgram;
 
 public class ShaderProgram {
     //Uniform constants
-    protected static final String U_MATRIX = "u_Matrix";
     protected static final String U_TEXTURE_UNIT = "u_TextureUnit";
+
+    protected static final String U_VECTOR_TO_LIGHT = "u_VectorToLight";
+    protected static final String U_MV_MATRIX = "u_MVMatrix";
+    protected static final String U_IT_MV_MATRIX = "u_IT_MVMatrix";
+    protected static final String U_MVP_MATRIX = "u_MVPMatrix";
 
     //Attribute constants
     protected static final String A_POSITION = "a_Position";
-    protected static final String A_COLOR = "a_Color";
+    protected static final String A_NORMAL = "a_Normal";
     protected static final String A_TEXTURE_COORDINATES = "a_TextureCoordinates";
 
 

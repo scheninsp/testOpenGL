@@ -12,6 +12,9 @@ import static android.opengl.Matrix.multiplyMM;
 import static android.opengl.Matrix.rotateM;
 import static android.opengl.Matrix.setIdentityM;
 import static android.opengl.Matrix.translateM;
+import static android.opengl.Matrix.invertM;
+import static android.opengl.Matrix.transposeM;
+import static android.opengl.Matrix.multiplyMV;
 
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
@@ -26,13 +29,19 @@ import com.example.testopengl.objects.BoardHmap;
 import com.example.testopengl.programs.TextureShaderProgram;
 import com.example.testopengl.util.MatrixHelper;
 import com.example.testopengl.util.TextureHelper;
+import com.example.testopengl.util.Geometry.Vector;
 
 public class ObjectRenderer implements Renderer {
     private final Context context;
 
     private final float[] projectionMatrix = new float[16];
     private final float[] modelMatrix = new float[16];
-    private final float[] mpMatrix = new float[16];
+    private final float[] viewMatrix = new float[16];
+    private final float[] mvMatrix = new float[16];
+    private final float[] it_mvMatrix = new float[16];
+    private final float[] mvpMatrix = new float[16];
+
+    final float[] vectorToLight = {-1f, 1f, -3f, 0f};  //light point to which direction
 
     //for rotation
     public volatile float deltaX;
@@ -93,6 +102,7 @@ public class ObjectRenderer implements Renderer {
         //make texture view rightly top-down
         //rotateM(modelMatrix, 0, -45f, 1f, 0f, 0f);
         //rotateM(modelMatrix, 0, -90f, 0f, 0f, 1f);
+        setIdentityM(viewMatrix, 0);
 
         // Set currentRotation.
         Matrix.setIdentityM(currentRotation, 0);
@@ -109,12 +119,29 @@ public class ObjectRenderer implements Renderer {
         Matrix.multiplyMM(temporaryMatrix, 0, modelMatrix, 0, accumulatedRotation, 0);
         System.arraycopy(temporaryMatrix, 0, modelMatrix, 0, 16);
 
+        //apply viewMatrix , get inverse transposed model-view Matrix
+        multiplyMM(mvMatrix, 0, viewMatrix, 0, modelMatrix, 0);
+        invertM(temporaryMatrix, 0, mvMatrix, 0);
+        transposeM(it_mvMatrix, 0, temporaryMatrix, 0);
+
         //apply projectionMatrix
-        multiplyMM(temporaryMatrix, 0, projectionMatrix, 0, modelMatrix, 0);
-        System.arraycopy(temporaryMatrix, 0, mpMatrix, 0, temporaryMatrix.length);
+        multiplyMM(temporaryMatrix, 0, projectionMatrix, 0, mvMatrix, 0);
+        System.arraycopy(temporaryMatrix, 0, mvpMatrix, 0, temporaryMatrix.length);
+
+        //set directional light
+        final float[] vectorToLightInEyeSpace = new float[4];
+
+        Vector vectorToLight_vec = new Vector(vectorToLight[0],vectorToLight[1],vectorToLight[2]);
+        Vector vectorToLight_norm = vectorToLight_vec.normalize();
+        vectorToLight[0] = vectorToLight_norm.x;
+        vectorToLight[1] = vectorToLight_norm.y;
+        vectorToLight[2] = vectorToLight_norm.z;
+
+        multiplyMV(vectorToLightInEyeSpace, 0, viewMatrix, 0, vectorToLight, 0);
 
         // Draw the table.
-        textureProgram.setUniforms(mpMatrix, texture);
+        textureProgram.setUniforms(mvMatrix, it_mvMatrix, mvpMatrix, vectorToLightInEyeSpace, texture);
+
         board.bindData(textureProgram);
         board.draw();
 
