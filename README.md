@@ -9,7 +9,12 @@ Features:
 (4)Directional Lighting using Lambert model  
 Adding more features...  
   
-![(1)Meshgrid Twisted Rotated](https://github.com/scheninsp/testOpenGL/blob/master/TestOPENGL_with_rotation/meshgrid_light.jpg)
-
+![(1)Meshgrid Twisted Rotated](https://github.com/scheninsp/testOpenGL/tree/master/TestOPENGL_with_rotation)  
+  
+<p align="left">
+    <img src="./TestOPENGL_with_rotation/meshgrid_light.jpg", width="320">
+    <br>
+</p>
+  
 Reference:
 The LearnOpenGL Tutorial  
