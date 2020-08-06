@@ -6,12 +6,10 @@ Features:
 (1)Generate meshgrid for texturing x-y plane  
 (2)Height data generated and applied to z  
 (3)Rotation enabled  
-(4)Directional Lighting using Lambert model
+(4)Directional Lighting using Lambert model  
 Adding more features...  
   
 ![(1)Meshgrid Twisted Rotated](https://github.com/scheninsp/testOpenGL/blob/master/TestOPENGL_with_rotation/meshgrid_light.jpg)
 
 Reference:
-Object Rotation (Rotate_Object_Tutorial)  
 The LearnOpenGL Tutorial  
-![(2)Rotate Object](https://github.com/scheninsp/testOpenGL/blob/master/Rotate_Object_Tutorial/rotate_object_tutorial.jpg)
