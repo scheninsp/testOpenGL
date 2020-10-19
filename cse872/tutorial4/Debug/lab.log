@@ -1,0 +1,9 @@
+﻿  ChildView.cpp
+c:\cppprojects\cse872\tutorial4\childview.cpp(386): warning C4244: “初始化”: 从“double”转换到“float”，可能丢失数据
+c:\cppprojects\cse872\tutorial4\childview.cpp(387): warning C4244: “初始化”: 从“double”转换到“float”，可能丢失数据
+c:\cppprojects\cse872\tutorial4\childview.cpp(389): warning C4244: “初始化”: 从“double”转换到“float”，可能丢失数据
+c:\cppprojects\cse872\tutorial4\childview.cpp(390): warning C4244: “初始化”: 从“double”转换到“float”，可能丢失数据
+c:\cppprojects\cse872\tutorial4\childview.cpp(394): warning C4244: “初始化”: 从“double”转换到“float”，可能丢失数据
+c:\cppprojects\cse872\tutorial4\childview.cpp(395): warning C4244: “初始化”: 从“double”转换到“float”，可能丢失数据
+c:\cppprojects\cse872\tutorial4\childview.cpp(400): warning C4172: 返回局部变量或临时变量的地址: uv
+  lab.vcxproj -> C:\CppProjects\cse872\tutorial4\.\Debug\lab.exe

@@ -68,6 +68,7 @@ private:
 	double m_spinangle;
 
     void Box(GLdouble p_x, GLdouble p_y, GLdouble p_z);
+	GLfloat* CChildView::SampleSphereMapping(GLdouble *n1, GLdouble *n2, GLdouble *n3);
 
     CGrCamera       m_camera;
 public:

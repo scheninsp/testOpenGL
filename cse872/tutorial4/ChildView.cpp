@@ -270,10 +270,9 @@ void CChildView::Box(GLdouble p_x, GLdouble p_y, GLdouble p_z)
       glVertex3dv(d);
    glEnd();
 
-   glDisable(GL_TEXTURE_2D);
+//   glDisable(GL_TEXTURE_2D);
 
-   glEnable(GL_TEXTURE_2D);
-   glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+//   glEnable(GL_TEXTURE_2D);
    glBindTexture(GL_TEXTURE_2D, m_worldmap.TexName());
 
    // Right
@@ -344,6 +343,10 @@ void CChildView::Box(GLdouble p_x, GLdouble p_y, GLdouble p_z)
 
 void CChildView::Sphere(double p_radius)
 {
+	glEnable(GL_TEXTURE_2D);
+	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+	glBindTexture(GL_TEXTURE_2D, m_worldmap.TexName());
+	
    GLdouble a[] = {1, 0, 0};
    GLdouble b[] = {0, 0, -1};
    GLdouble c[] = {-1, 0, 0};
@@ -361,6 +364,8 @@ void CChildView::Sphere(double p_radius)
    SphereFace(recurse, p_radius, b, a, f);
    SphereFace(recurse, p_radius, c, b, f);
    SphereFace(recurse, p_radius, d, c, f);
+
+   glDisable(GL_TEXTURE_2D);
 }
 
 inline void Normalize(GLdouble *v)
@@ -376,6 +381,24 @@ inline void Normalize(GLdouble *v)
 // Description :  Draw a single facet of the sphere.  If p_recurse > 1,
 //                triangulate that facet and recurse.
 //
+
+GLfloat* CChildView::SampleSphereMapping(GLdouble *n1, GLdouble *n2, GLdouble *n3) {
+	float tx1 = atan2(n1[0], n1[2]) / (2. * GR_PI) + 0.5;
+	float ty1 = asin(n1[1]) / GR_PI + 0.5;
+
+	float tx2 = atan2(n2[0], n2[2]) / (2. * GR_PI) + 0.5;
+	float ty2 = asin(n2[1]) / GR_PI + 0.5;
+	if (tx1<0.75 && tx2>0.75) tx1 += 1.;
+	else if (tx1 > 0.75 && tx2 < 0.75) tx2 += 1.;
+
+	float tx3 = atan2(n3[0], n3[2]) / (2. * GR_PI) + 0.5;
+	float ty3 = asin(n3[1]) / GR_PI + 0.5;
+	if (tx2<0.75 && tx3>0.75) tx2 += 1.;
+	else if (tx2 > 0.75 && tx3 < 0.75) tx3 += 1.;
+
+	GLfloat uv[6] = { tx1, ty1, tx2, ty2, tx3, ty3 };
+	return uv;
+}
 
 void CChildView::SphereFace(int p_recurse, double p_radius, GLdouble *a, GLdouble *b, GLdouble *c)
 {
@@ -397,13 +420,19 @@ void CChildView::SphereFace(int p_recurse, double p_radius, GLdouble *a, GLdoubl
    }
 
    glBegin(GL_TRIANGLES);
+
+      GLfloat* uabc = SampleSphereMapping(a,b,c);
+
       glNormal3dv(a);
+	  glTexCoord2f(uabc[0],uabc[1]);
       glVertex3d(a[0] * p_radius, a[1] * p_radius, a[2] * p_radius);
 
       glNormal3dv(b);
+	  glTexCoord2f(uabc[2], uabc[3]);
       glVertex3d(b[0] * p_radius, b[1] * p_radius, b[2] * p_radius);
 
       glNormal3dv(c);
+	  glTexCoord2f(uabc[4], uabc[5]);
       glVertex3d(c[0] * p_radius, c[1] * p_radius, c[2] * p_radius);
    glEnd();
 }
